@@ -48,6 +48,12 @@ dependencies = [
     # Observability
     "logfire[sqlalchemy]",
     "logfire[fastapi]",
+    # Local OCR support
+    "onnxruntime",
+    "rapidocr>=2.1.0",
+    "openvino==2025.1.0; sys_platform == 'win32'",
+    # PostgreSQL support
+    "psycopg2-binary",
 ]
 [[project.authors]]
 name = "arkohut"
@@ -56,26 +62,14 @@ name = "arkohut"
 file = "LICENSE"
 
 [project.optional-dependencies]
-# Local ML model inference dependencies (for embedding and OCR models running locally)
+# Local ML model support (torch-based embedding + model downloading)
 local = [
-    # Deep learning framework
     "torch",
-    # Text embeddings
     "sentence-transformers",
-    # Vision models
     "timm",
     "einops",
-    # Model hub
     "modelscope",
-    # ONNX runtime for inference
-    "onnxruntime",
-    # OCR engine
-    "rapidocr>=2.1.0",
-    # Intel inference optimization (Windows only)
-    "openvino==2025.1.0; sys_platform == 'win32'",
 ]
-# PostgreSQL database support
-postgresql = ["psycopg2-binary"]
 
 [project.urls]
 Homepage = "https://github.com/arkohut/pensieve"
