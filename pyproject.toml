@@ -10,41 +10,44 @@ readme = "README.pypi.md"
 classifiers = [ "Programming Language :: Python :: 3", "License :: OSI Approved :: Apache Software License", "Operating System :: OS Independent",]
 requires-python = ">=3.10"
 dependencies = [
+    # Web framework
     "fastapi",
     "uvicorn",
     "httpx",
+    # Data validation
     "pydantic>=2.0",
-    "sqlalchemy>=2.0",
-    "typer>=0.13",
-    "magika",
     "pydantic-settings>=2.6",
+    # Database
+    "sqlalchemy>=2.0",
+    "alembic",
+    "sqlite_vec>=0.1.6",
+    # CLI
+    "typer>=0.13",
+    # Image processing
     "opencv-python",
     "pillow",
     "piexif",
     "imagehash",
-    "rapidocr>=2.1.0",
-    "openvino==2025.1.0; sys_platform == 'win32'",
-    "onnxruntime",
-    "py-cpuinfo",
+    "mss",
+    # System utilities
+    "watchdog",
     "psutil",
+    "py-cpuinfo",
+    "magika",
+    # NLP
+    "jieba",
+    "tabulate",
+    # Core dependency (required by opencv and other core features)
+    "numpy",
+    # Platform-specific: Windows screenshot and system interaction
     "pywin32; sys_platform == 'win32'",
+    # Platform-specific: macOS screenshot and system interaction
     "pyobjc-core; sys_platform == 'darwin'",
     "pyobjc-framework-Quartz; sys_platform == 'darwin'",
     "ocrmac; sys_platform == 'darwin'",
-    "sentence-transformers",
-    "torch",
-    "numpy",
-    "timm",
-    "einops",
-    "modelscope",
-    "mss",
-    "sqlite_vec>=0.1.6",
-    "watchdog",
-    "alembic",
+    # Observability
     "logfire[sqlalchemy]",
     "logfire[fastapi]",
-    "jieba",
-    "tabulate",
 ]
 [[project.authors]]
 name = "arkohut"
@@ -53,7 +56,26 @@ name = "arkohut"
 file = "LICENSE"
 
 [project.optional-dependencies]
-postgresql = [ "psycopg2-binary",]
+# Local ML model inference dependencies (for embedding and OCR models running locally)
+local = [
+    # Deep learning framework
+    "torch",
+    # Text embeddings
+    "sentence-transformers",
+    # Vision models
+    "timm",
+    "einops",
+    # Model hub
+    "modelscope",
+    # ONNX runtime for inference
+    "onnxruntime",
+    # OCR engine
+    "rapidocr>=2.1.0",
+    # Intel inference optimization (Windows only)
+    "openvino==2025.1.0; sys_platform == 'win32'",
+]
+# PostgreSQL database support
+postgresql = ["psycopg2-binary"]
 
 [project.urls]
 Homepage = "https://github.com/arkohut/pensieve"
