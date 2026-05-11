@@ -124,7 +124,11 @@ def get_or_create_default_library():
     """
     from .cmds.plugin import bind
 
-    response = httpx.get(f"{BASE_URL}/api/libraries")
+    try:
+        response = httpx.get(f"{BASE_URL}/api/libraries", timeout=10)
+    except (httpx.ConnectError, httpx.TimeoutException) as e:
+        print(f"Server not ready yet (serve may still be starting): {e}")
+        return None
     if response.status_code != 200:
         print(f"Failed to retrieve libraries: {response.status_code} - {response.text}")
         return None
