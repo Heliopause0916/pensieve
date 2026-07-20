@@ -36,11 +36,7 @@ def is_alive() -> bool:
         pid = int(pid_text)
     except ValueError:
         return False
-    try:
-        os.kill(pid, 0)
-    except (ProcessLookupError, PermissionError):
-        return False
-    return True
+    return psutil.pid_exists(pid)
 
 
 def is_on_battery() -> bool:

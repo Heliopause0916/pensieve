@@ -82,6 +82,27 @@ def is_intentionally_stopped(service_name: str) -> bool:
     """True when a `pen stop` marker is present for this service."""
     return intent_marker_file(service_name).exists()
 
+def _is_ancestor_pid(candidate_pid: int, descendant_pid: int) -> bool:
+    """Return True if candidate_pid is an ancestor of descendant_pid.
+
+    Used to detect the uv launcher scenario: start_service spawns a launcher
+    (whose PID is written to the PID file), and the launcher spawns the real
+    service process. The service process can detect the launcher as its
+    ancestor and reclaim the lock.
+    """
+    try:
+        process = psutil.Process(descendant_pid)
+        parent = process.parent()
+        for _ in range(64):  # depth limit, well beyond any real process tree
+            if parent is None:
+                return False
+            if parent.pid == candidate_pid:
+                return True
+            parent = parent.parent()
+    except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+        pass
+    return False
+
 def acquire_service_lock(service_name: str) -> Tuple[bool, Optional[int]]:
     """Try to claim the PID-file lock for this service.
 
@@ -92,11 +113,20 @@ def acquire_service_lock(service_name: str) -> Tuple[bool, Optional[int]]:
     uses O_EXCL to turn the check-then-write TOCTOU window into a hard error.
     """
     self_pid = os.getpid()
+    file_pid = read_pid_file(service_name)
 
     # start_service pre-writes the child PID before the child is alive, so the
     # subprocess will find a file containing its own PID. Treat that as already
     # ours.
-    if read_pid_file(service_name) == self_pid:
+    if file_pid == self_pid:
+        return True, None
+
+    # uv tool installs a launcher as pythonw.exe/python.exe. Popen returns the
+    # launcher's PID, which then spawns the real interpreter (this process) as
+    # a grandchild. The PID file therefore contains the launcher's PID, which
+    # is our ancestor. Detect that and reclaim the lock with our own PID.
+    if file_pid is not None and _is_ancestor_pid(file_pid, self_pid):
+        write_pid_file(service_name, self_pid)
         return True, None
 
     running, pid = is_service_running(service_name, exclude_pid=self_pid)
@@ -148,6 +178,9 @@ def is_service_running(
             cmdline = " ".join(process.cmdline())
             if "python" in process.name().lower() and "memos.commands" in cmdline and service_name in cmdline:
                 return True, pid
+            else:
+                # PID recycled to a different process – clean up stale file
+                remove_pid_file(service_name)
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
             # Process doesn't exist or can't be accessed, clean up PID file
             remove_pid_file(service_name)
